@@ -1,5 +1,6 @@
-const CACHE_NAME = 'truco-v1.0.0';
+const CACHE_NAME = 'truco-v1.0.1';
 const ASSETS_TO_CACHE = [
+  './',
   './index.php',
   './style.css',
   './app.js',
@@ -11,10 +12,11 @@ const ASSETS_TO_CACHE = [
 ];
 
 self.addEventListener('install', (event) => {
+  self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       return cache.addAll(ASSETS_TO_CACHE);
-    }).then(() => self.skipWaiting())
+    }).catch((err) => console.warn('Cache addAll error:', err))
   );
 });
 
@@ -32,9 +34,14 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Pure Network-First Strategy
+// Pure Network-First Strategy with robust fallback
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
+
+  // Only handle http/https requests within origin
+  if (!event.request.url.startsWith(self.location.origin)) {
+    return;
+  }
 
   event.respondWith(
     fetch(event.request)
@@ -47,8 +54,22 @@ self.addEventListener('fetch', (event) => {
         }
         return networkResponse;
       })
-      .catch(() => {
-        return caches.match(event.request);
+      .catch(async () => {
+        const cached = await caches.match(event.request, { ignoreSearch: true });
+        if (cached) return cached;
+
+        // If navigation request, fallback to root or index.php
+        if (event.request.mode === 'navigate') {
+          const rootCached = (await caches.match('./')) || (await caches.match('./index.php'));
+          if (rootCached) return rootCached;
+        }
+
+        // Return a valid Response object so respondWith never receives undefined
+        return new Response('Offline - Conteúdo não disponível sem conexão.', {
+          status: 503,
+          statusText: 'Service Unavailable',
+          headers: { 'Content-Type': 'text/plain; charset=utf-8' }
+        });
       })
   );
 });
