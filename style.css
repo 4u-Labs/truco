@@ -1,0 +1,1143 @@
+:root {
+    --felt-color-center: #1a5c3a;
+    --felt-color-mid: #0d3d25;
+    --felt-color-edge: #082818;
+    --wood-border: #3b2210;
+    --wood-light: #5a3518;
+    --gold-accent: #ffd700;
+    --gold-dark: #c9a227;
+    --text-color: #f3f4f6;
+    --card-bg: linear-gradient(145deg, #ffffff 0%, #f4f5f7 100%);
+    --card-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+    --primary-color: #38ef7d;
+    --danger-color: #dc2626;
+    --warning-color: #f59e0b;
+    --container-bg: rgba(13, 22, 17, 0.88);
+    --border-color: rgba(255, 215, 0, 0.2);
+    --secondary-bg: rgba(26, 44, 34, 0.85);
+    --secondary-hover-bg: rgba(38, 64, 50, 0.95);
+    --subtitle-color: #9ca3af;
+    --title-color: #ffd700;
+    --glass-blur: blur(14px);
+    --glow-color: rgba(56, 239, 125, 0.35);
+    --input-bg: rgba(10, 20, 15, 0.9);
+    --input-border: #234d35;
+    --input-focus-border: #ffd700;
+    --input-focus-shadow: rgba(255, 215, 0, 0.3);
+    --success-bg: rgba(46, 160, 67, 0.2);
+    --success-text: #3fb950;
+    --primary-gradient: linear-gradient(135deg, #16a34a, #38ef7d);
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Roboto', -apple-system, sans-serif;
+    background-color: var(--felt-color-edge);
+    color: var(--text-color);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow-x: hidden;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+.bebas {
+    font-family: 'Bebas Neue', sans-serif;
+    letter-spacing: 1px;
+}
+
+.orbitron {
+    font-family: 'Orbitron', monospace;
+}
+
+/* ====================================================
+   MESA DE JOGO (TABLE FELT & WOOD BORDER)
+==================================================== */
+.game-viewport {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100vh;
+    max-height: 100vh;
+    position: relative;
+    background: radial-gradient(ellipse at center, var(--felt-color-center) 0%, var(--felt-color-mid) 55%, var(--felt-color-edge) 100%);
+    box-shadow: inset 0 0 120px rgba(0, 0, 0, 0.7);
+    border: 12px solid var(--wood-border);
+    border-style: ridge;
+}
+
+@media (max-width: 768px) {
+    .game-viewport {
+        border-width: 6px;
+    }
+}
+
+/* Screen Shake Effect */
+.shake-screen {
+    animation: screenShake 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+@keyframes screenShake {
+    10%, 90% { transform: translate3d(-2px, -2px, 0); }
+    20%, 80% { transform: translate3d(3px, 2px, 0); }
+    30%, 50%, 70% { transform: translate3d(-5px, -3px, 0); }
+    40%, 60% { transform: translate3d(5px, 3px, 0); }
+}
+
+/* ====================================================
+   PLACAR & BARRA SUPERIOR
+==================================================== */
+.score-bar {
+    background: rgba(8, 20, 14, 0.88);
+    backdrop-filter: blur(10px);
+    border-bottom: 2px solid rgba(218, 165, 32, 0.4);
+    padding: 8px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    z-index: 20;
+}
+
+.score-badge {
+    background: linear-gradient(145deg, #111e17, #060c09);
+    border: 1px solid var(--gold-dark);
+    border-radius: 12px;
+    padding: 6px 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+}
+
+.score-badge.player { border-color: var(--primary-color); }
+.score-badge.opponent { border-color: #ef4444; }
+
+.score-badge .score-val {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.8rem;
+    color: #fff;
+    line-height: 1;
+}
+
+.score-badge .score-label {
+    font-size: 0.85rem;
+    font-weight: 700;
+}
+
+.score-center-info {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+
+.game-mode-pill {
+    font-size: 0.7rem;
+    font-family: 'Orbitron', monospace;
+    background: rgba(255, 215, 0, 0.15);
+    color: var(--gold-accent);
+    padding: 2px 8px;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 215, 0, 0.3);
+    margin-bottom: 2px;
+}
+
+.current-bet-display {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+}
+
+.current-bet-display span.label {
+    font-size: 0.9rem;
+    font-family: 'Bebas Neue', sans-serif;
+    color: var(--gold-accent);
+}
+
+.current-bet-display span.value {
+    font-size: 2.2rem;
+    font-family: 'Bebas Neue', sans-serif;
+    color: #fff;
+    text-shadow: 0 0 10px rgba(255, 215, 0, 0.6);
+}
+
+/* ====================================================
+   ELEMENTOS DE MESA (RODADAS, VIRA, ÁREA DE JOGO)
+==================================================== */
+.table-area {
+    flex: 1;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 12px;
+    overflow: hidden;
+}
+
+.round-indicators {
+    position: absolute;
+    top: 14px;
+    left: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    z-index: 10;
+}
+
+.round-indicators-title {
+    font-size: 0.7rem;
+    font-family: 'Orbitron', sans-serif;
+    color: var(--gold-dark);
+    letter-spacing: 1px;
+}
+
+.round-dots-row {
+    display: flex;
+    gap: 8px;
+}
+
+.round-dot {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    border: 2px solid var(--gold-dark);
+    background: rgba(0, 0, 0, 0.4);
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.6);
+    transition: all 0.3s ease;
+}
+
+.round-dot.won-player {
+    background: #22c55e;
+    border-color: #4ade80;
+    box-shadow: 0 0 10px #22c55e;
+}
+
+.round-dot.won-opponent {
+    background: #ef4444;
+    border-color: #f87171;
+    box-shadow: 0 0 10px #ef4444;
+}
+
+.round-dot.draw {
+    background: #eab308;
+    border-color: #fde047;
+    box-shadow: 0 0 10px #eab308;
+}
+
+/* Vira Card Box */
+.vira-container {
+    position: absolute;
+    top: 14px;
+    right: 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    z-index: 10;
+}
+
+.vira-title {
+    font-size: 0.7rem;
+    font-family: 'Orbitron', sans-serif;
+    color: var(--gold-dark);
+    letter-spacing: 1px;
+    margin-bottom: 4px;
+}
+
+/* Center Battlefield */
+.battlefield {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+
+.played-slots {
+    display: flex;
+    align-items: center;
+    gap: 40px;
+}
+
+@media (max-width: 500px) {
+    .played-slots {
+        gap: 20px;
+    }
+}
+
+.played-slot {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 74px;
+}
+
+.slot-placeholder {
+    width: 74px;
+    height: 106px;
+    border: 2px dashed rgba(255, 215, 0, 0.25);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.2);
+}
+
+.vs-badge {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 2.2rem;
+    color: var(--gold-accent);
+    text-shadow: 0 2px 8px rgba(0,0,0,0.8);
+    opacity: 0.8;
+}
+
+/* ====================================================
+   CARTAS DE BARALHO (3D PLAYING CARDS)
+==================================================== */
+.card {
+    width: 74px;
+    height: 106px;
+    border-radius: 10px;
+    background: var(--card-bg);
+    box-shadow: var(--card-shadow), inset 0 1px 0 rgba(255,255,255,0.9);
+    cursor: pointer;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.25s ease;
+    border: 1px solid rgba(0,0,0,0.15);
+}
+
+@media (max-width: 480px) {
+    .card {
+        width: 66px;
+        height: 94px;
+    }
+}
+
+.card:hover:not(.played):not(.opponent-card) {
+    transform: translateY(-16px) scale(1.08);
+    box-shadow: 0 18px 30px rgba(0, 0, 0, 0.6), 0 0 15px rgba(255, 215, 0, 0.4);
+    z-index: 15;
+}
+
+.card.played {
+    cursor: default;
+    animation: dropCard 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes dropCard {
+    0% { transform: scale(0.6) translateY(-40px); opacity: 0; }
+    100% { transform: scale(1) translateY(0); opacity: 1; }
+}
+
+.card-red { color: #dc2626; }
+.card-black { color: #111827; }
+
+.card-value {
+    font-size: 1.1rem;
+    font-weight: 900;
+    position: absolute;
+    top: 4px;
+    left: 8px;
+    line-height: 1;
+}
+
+.card-suit-corner {
+    font-size: 0.75rem;
+    position: absolute;
+    top: 20px;
+    left: 8px;
+    line-height: 1;
+}
+
+.card-suit {
+    font-size: 2.2rem;
+    line-height: 1;
+}
+
+.card-value-bottom {
+    font-size: 1.1rem;
+    font-weight: 900;
+    position: absolute;
+    bottom: 4px;
+    right: 8px;
+    transform: rotate(180deg);
+    line-height: 1;
+}
+
+.card-suit-bottom {
+    font-size: 0.75rem;
+    position: absolute;
+    bottom: 20px;
+    right: 8px;
+    transform: rotate(180deg);
+    line-height: 1;
+}
+
+/* Card Back (Verso da Carta) */
+.card-back {
+    background: linear-gradient(135deg, #1e3a5f 0%, #0c1c30 100%);
+    border: 3px solid #c9a227;
+    position: relative;
+    overflow: hidden;
+}
+
+.card-back::before {
+    content: '🃏';
+    font-size: 28px;
+    opacity: 0.85;
+}
+
+.card-back::after {
+    content: '';
+    position: absolute;
+    inset: 3px;
+    border: 1px dashed rgba(255, 215, 0, 0.4);
+    border-radius: 6px;
+    pointer-events: none;
+}
+
+/* Manilha Highlight */
+.manilha {
+    border: 2px solid var(--gold-accent);
+    animation: manilhaGlow 1.6s ease-in-out infinite;
+}
+
+@keyframes manilhaGlow {
+    0%, 100% {
+        box-shadow: 0 0 8px var(--gold-accent), 0 4px 15px rgba(0,0,0,0.5);
+    }
+    50% {
+        box-shadow: 0 0 20px var(--gold-accent), 0 0 32px rgba(255, 165, 0, 0.8), 0 4px 15px rgba(0,0,0,0.5);
+    }
+}
+
+.vira {
+    transform: rotate(-6deg);
+    box-shadow: 0 0 16px rgba(255, 215, 0, 0.5);
+}
+
+/* ====================================================
+   MÃOS DO JOGADOR E OPONENTE
+==================================================== */
+.hands-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 12px;
+}
+
+.opponent-cards-row {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 8px;
+}
+
+.opponent-cards-row .card {
+    margin-left: -20px;
+}
+
+.opponent-cards-row .card:first-child {
+    margin-left: 0;
+}
+
+.player-cards-row {
+    display: flex;
+    justify-content: center;
+    gap: 14px;
+    padding-bottom: 6px;
+}
+
+/* ====================================================
+   BALÕES DE FALA & PROVOCAÇÕES (SPEECH BUBBLES)
+==================================================== */
+.speech-bubble {
+    position: absolute;
+    top: 70px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(17, 24, 39, 0.95);
+    color: #fff;
+    border: 2px solid var(--gold-accent);
+    border-radius: 14px;
+    padding: 8px 18px;
+    font-size: 0.95rem;
+    font-weight: 700;
+    white-space: nowrap;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+    z-index: 30;
+    animation: popBubble 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.speech-bubble::after {
+    content: '';
+    position: absolute;
+    top: -8px;
+    left: 50%;
+    transform: translateX(-50%);
+    border-width: 0 8px 8px 8px;
+    border-style: solid;
+    border-color: transparent transparent var(--gold-accent) transparent;
+}
+
+@keyframes popBubble {
+    0% { transform: translateX(-50%) scale(0.4); opacity: 0; }
+    100% { transform: translateX(-50%) scale(1); opacity: 1; }
+}
+
+/* Center Toast Messages */
+.announcement-banner {
+    position: absolute;
+    top: 48%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(10, 20, 15, 0.94);
+    color: #fff;
+    border: 2px solid var(--gold-accent);
+    border-radius: 16px;
+    padding: 14px 28px;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 2rem;
+    letter-spacing: 2px;
+    text-align: center;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.7), 0 0 25px rgba(255, 215, 0, 0.3);
+    z-index: 40;
+    pointer-events: none;
+    animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes popIn {
+    0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
+    100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+}
+
+/* ====================================================
+   BOTÕES DE AÇÃO DO JOGO
+==================================================== */
+.game-actions-bar {
+    position: absolute;
+    bottom: 24px;
+    right: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    z-index: 25;
+}
+
+.btn-truco-call {
+    background: linear-gradient(145deg, #dc2626 0%, #991b1b 100%);
+    color: #fff;
+    border: 2px solid #ef4444;
+    border-radius: 12px;
+    padding: 12px 20px;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.4rem;
+    letter-spacing: 1px;
+    cursor: pointer;
+    box-shadow: 0 6px 20px rgba(220, 38, 38, 0.5);
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.btn-truco-call:hover:not(:disabled) {
+    transform: scale(1.06);
+    box-shadow: 0 8px 30px rgba(220, 38, 38, 0.8);
+    filter: brightness(1.1);
+}
+
+.btn-coberta {
+    background: rgba(30, 41, 59, 0.9);
+    color: #cbd5e1;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 10px;
+    padding: 8px 14px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.btn-coberta.active {
+    background: #eab308;
+    color: #000;
+    border-color: #ca8a04;
+    box-shadow: 0 0 15px rgba(234, 179, 8, 0.5);
+}
+
+.btn-run-action {
+    background: linear-gradient(145deg, #d97706, #b45309);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    padding: 8px 14px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-run-action:hover {
+    transform: scale(1.04);
+}
+
+/* ====================================================
+   MODAIS (TRUCO, MÃO DE 11, GAME OVER)
+==================================================== */
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.82);
+    backdrop-filter: blur(8px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    padding: 16px;
+}
+
+.modal-overlay.active {
+    display: flex;
+}
+
+.modal-dialog {
+    background: linear-gradient(145deg, #16241c, #0d1712);
+    border: 2px solid var(--gold-accent);
+    border-radius: 20px;
+    padding: 32px;
+    text-align: center;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.8), 0 0 30px rgba(255, 215, 0, 0.3);
+    max-width: 460px;
+    width: 100%;
+    animation: modalPop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes modalPop {
+    0% { transform: scale(0.7); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+.modal-dialog h2 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 2.6rem;
+    color: var(--gold-accent);
+    margin-bottom: 6px;
+    letter-spacing: 2px;
+}
+
+.modal-dialog p {
+    color: #d1d5db;
+    margin-bottom: 20px;
+    font-size: 1rem;
+}
+
+.modal-btn-row {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.btn-accept-call {
+    background: linear-gradient(145deg, #16a34a, #15803d);
+    color: #fff;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 12px;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.4rem;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(22, 163, 74, 0.4);
+    transition: all 0.2s ease;
+}
+
+.btn-run-call {
+    background: linear-gradient(145deg, #d97706, #b45309);
+    color: #fff;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 12px;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.4rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-raise-call {
+    background: linear-gradient(145deg, #dc2626, #991b1b);
+    color: #fff;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 12px;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.4rem;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(220, 38, 38, 0.5);
+    transition: all 0.2s ease;
+}
+
+.btn-accept-call:hover, .btn-run-call:hover, .btn-raise-call:hover {
+    transform: scale(1.05);
+}
+
+/* ====================================================
+   TELA INICIAL & SELEÇÃO DE MODOS
+==================================================== */
+.start-screen {
+    position: fixed;
+    inset: 0;
+    background: radial-gradient(ellipse at center, #1a5c3a 0%, #0d3d25 50%, #082818 100%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    z-index: 80;
+}
+
+.start-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 4rem;
+    color: #fff;
+    text-shadow: 0 4px 20px rgba(0,0,0,0.8), 0 0 30px rgba(255, 215, 0, 0.4);
+    margin-bottom: 2px;
+    letter-spacing: 3px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.start-subtitle {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.4rem;
+    color: var(--gold-accent);
+    letter-spacing: 2px;
+    margin-bottom: 28px;
+}
+
+.mode-cards-grid {
+    display: flex;
+    gap: 20px;
+    justify-content: center;
+    flex-wrap: wrap;
+    max-width: 680px;
+    margin-bottom: 24px;
+}
+
+.mode-card {
+    background: rgba(13, 27, 19, 0.85);
+    border: 2px solid var(--border-color);
+    border-radius: 16px;
+    padding: 20px;
+    width: 280px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-align: left;
+    backdrop-filter: blur(8px);
+}
+
+.mode-card:hover {
+    border-color: var(--gold-accent);
+    transform: translateY(-4px);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+}
+
+.mode-card.selected {
+    border-color: var(--gold-accent);
+    background: rgba(22, 44, 30, 0.95);
+    box-shadow: 0 0 25px rgba(255, 215, 0, 0.35);
+    transform: scale(1.02);
+}
+
+.mode-card h3 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.6rem;
+    color: var(--gold-accent);
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.mode-card p {
+    font-size: 0.85rem;
+    color: #9ca3af;
+    line-height: 1.5;
+    margin-bottom: 12px;
+}
+
+.mode-rule-box {
+    background: rgba(0, 0, 0, 0.35);
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: 0.78rem;
+    color: #d1d5db;
+}
+
+.difficulty-picker {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 24px;
+}
+
+.diff-btn {
+    background: rgba(13, 27, 19, 0.85);
+    border: 1px solid var(--border-color);
+    color: var(--text-color);
+    padding: 8px 16px;
+    border-radius: 10px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.diff-btn.active {
+    background: var(--gold-accent);
+    color: #000;
+    border-color: var(--gold-accent);
+}
+
+.btn-start-game {
+    background: linear-gradient(135deg, #16a34a, #38ef7d);
+    color: #fff;
+    border: none;
+    padding: 14px 44px;
+    border-radius: 14px;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.8rem;
+    letter-spacing: 2px;
+    cursor: pointer;
+    box-shadow: 0 8px 25px rgba(56, 239, 125, 0.4);
+    transition: all 0.25s ease;
+}
+
+.btn-start-game:hover {
+    transform: scale(1.06);
+    box-shadow: 0 12px 35px rgba(56, 239, 125, 0.6);
+    filter: brightness(1.1);
+}
+
+/* ====================================================
+   PÁGINAS INSTITUCIONAIS (PRIVACIDADE, TERMOS, SUPORTE)
+==================================================== */
+body.legal-body {
+    background-color: var(--felt-color-edge);
+    color: var(--text-color);
+    min-height: 100vh;
+    padding: 24px 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.legal-container {
+    max-width: 860px;
+    width: 100%;
+    margin: 0 auto;
+    position: relative;
+    z-index: 1;
+}
+
+.legal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+    padding: 4px 0;
+}
+
+.legal-header .btn-secondary,
+.legal-header .btn.btn-secondary {
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 18px;
+    border-radius: 12px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    background: var(--secondary-bg);
+    color: var(--text-color);
+    border: 1px solid var(--border-color);
+    transition: all 0.2s ease;
+}
+
+.legal-header .btn-secondary:hover,
+.legal-header .btn.btn-secondary:hover {
+    background: var(--secondary-hover-bg);
+    border-color: var(--gold-accent);
+    transform: translateX(-3px);
+}
+
+.brand-mini {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'Poppins', sans-serif;
+    font-weight: 700;
+    font-size: 1.05rem;
+    color: var(--text-color);
+}
+
+.brand-mini .brand-icon {
+    font-size: 1.3rem;
+    color: var(--gold-accent);
+}
+
+.legal-card {
+    background: var(--container-bg);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    border: 1px solid var(--border-color);
+    border-radius: 20px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+    padding: 40px 36px;
+    margin-bottom: 24px;
+}
+
+@media (max-width: 600px) {
+    .legal-card {
+        padding: 24px 18px;
+    }
+}
+
+.legal-card h1 {
+    font-family: 'Poppins', sans-serif;
+    font-size: 1.85rem;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    color: #fff;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: linear-gradient(135deg, #ffd700, #38ef7d);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.legal-card h1 i {
+    -webkit-text-fill-color: var(--gold-accent);
+}
+
+.legal-subtitle {
+    color: var(--subtitle-color);
+    font-size: 0.95rem;
+    margin-bottom: 32px;
+    padding-bottom: 18px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.legal-section {
+    margin-bottom: 32px;
+}
+
+.legal-section h2 {
+    font-family: 'Poppins', sans-serif;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--title-color);
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.legal-section p {
+    color: var(--text-color);
+    font-size: 0.95rem;
+    line-height: 1.75;
+    margin-bottom: 14px;
+}
+
+.legal-section ul {
+    margin: 12px 0 16px 20px;
+    color: var(--text-color);
+    font-size: 0.95rem;
+    line-height: 1.75;
+}
+
+.legal-section li {
+    margin-bottom: 8px;
+}
+
+.legal-section code {
+    background: rgba(255, 215, 0, 0.12);
+    color: var(--gold-accent);
+    padding: 2px 7px;
+    border-radius: 6px;
+    font-family: 'Orbitron', monospace;
+    font-size: 0.85em;
+    border: 1px solid rgba(255, 215, 0, 0.25);
+}
+
+/* FAQ Cards */
+.faq-item {
+    background: var(--secondary-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 14px;
+    padding: 20px 22px;
+    margin-bottom: 16px;
+    transition: all 0.25s ease;
+}
+
+.faq-item:hover {
+    border-color: var(--gold-accent);
+    box-shadow: 0 6px 20px rgba(255, 215, 0, 0.1);
+    transform: translateY(-2px);
+}
+
+.faq-item h3 {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--text-color);
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    line-height: 1.4;
+}
+
+.faq-item h3 i {
+    color: var(--gold-accent);
+    margin-top: 3px;
+    flex-shrink: 0;
+}
+
+.faq-item p {
+    margin-top: 10px;
+    margin-bottom: 0;
+    color: var(--subtitle-color);
+    line-height: 1.65;
+    font-size: 0.92rem;
+}
+
+/* Support Form */
+.support-form {
+    background: var(--secondary-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    padding: 24px;
+    margin-top: 16px;
+}
+
+.form-row-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+    margin-bottom: 14px;
+}
+
+@media (max-width: 600px) {
+    .form-row-2 {
+        grid-template-columns: 1fr;
+    }
+}
+
+.form-field {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.form-field label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--subtitle-color);
+}
+
+.support-input {
+    background: var(--input-bg);
+    border: 1px solid var(--input-border);
+    color: var(--text-color);
+    padding: 12px 16px;
+    border-radius: 10px;
+    font-size: 0.95rem;
+    font-family: inherit;
+    width: 100%;
+    outline: none;
+    transition: all 0.2s ease;
+    box-sizing: border-box;
+}
+
+.support-input:focus {
+    border-color: var(--input-focus-border);
+    box-shadow: 0 0 0 3px var(--input-focus-shadow);
+}
+
+textarea.support-input {
+    resize: vertical;
+    min-height: 110px;
+}
+
+.btn-glow {
+    background: var(--primary-gradient);
+    color: #fff;
+    border: none;
+    padding: 14px 28px;
+    border-radius: 12px;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+    transition: all 0.25s ease;
+    box-shadow: 0 4px 18px var(--glow-color);
+}
+
+.btn-glow:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 24px var(--glow-color);
+    filter: brightness(1.1);
+}
+
+.alert-success-box {
+    background: var(--success-bg);
+    color: var(--success-text);
+    border: 1px solid rgba(56, 239, 125, 0.4);
+    padding: 14px 18px;
+    border-radius: 12px;
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 600;
+    font-size: 0.95rem;
+}
+
+.legal-footer {
+    text-align: center;
+    color: var(--subtitle-color);
+    font-size: 0.85rem;
+    padding: 16px 0 32px;
+}
+
+.text-link {
+    color: var(--title-color);
+    text-decoration: none;
+    font-weight: 600;
+    transition: color 0.2s ease;
+}
+
+.text-link:hover {
+    color: var(--primary-color);
+    text-decoration: underline;
+}
