@@ -321,22 +321,28 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function renderVira() {
         const container = $('#viraCardContainer');
+        const viraTitle = $('.vira-title');
         if (!container) return;
         container.innerHTML = '';
 
         if (selectedMode === 'mineiro') {
-            // Mineiro doesn't need a Vira card because manilhas are fixed,
-            // but we display the fixed Zap & Copeta reference for player convenience
+            if (viraTitle) viraTitle.textContent = 'MANILHAS';
             container.innerHTML = `
-                <div class="card vira" style="font-size:0.65rem; padding: 4px; text-align:center; background:#0d1c14; border: 2px solid var(--gold-accent); color:var(--gold-accent);">
-                    <strong>MANILHAS<br>FIXAS</strong><br>
-                    <span style="color:#38ef7d;">4♣</span> &gt; <span style="color:#ef4444;">7♥</span><br>
-                    <span style="color:#60a5fa;">A♠</span> &gt; <span style="color:#fbbf24;">7♦</span>
+                <div class="card vira" style="font-size:0.68rem; padding: 4px; text-align:center; background:#0d1c14; border: 2px solid var(--gold-accent); color:var(--gold-accent); line-height: 1.3; display: flex; flex-direction: column; justify-content: center; align-items: center;">
+                    <span style="font-size:0.62rem; letter-spacing:0.5px; color:var(--gold-accent); font-weight:700; margin-bottom:2px;">FIXAS</span>
+                    <span style="color:#38ef7d; font-weight:700;">4♣</span>
+                    <span style="font-size:0.55rem; opacity:0.6;">▼</span>
+                    <span style="color:#ef4444; font-weight:700;">7♥</span>
+                    <span style="font-size:0.55rem; opacity:0.6;">▼</span>
+                    <span style="color:#60a5fa; font-weight:700;">A♠</span>
+                    <span style="font-size:0.55rem; opacity:0.6;">▼</span>
+                    <span style="color:#fbbf24; font-weight:700;">7♦</span>
                 </div>
             `;
             return;
         }
 
+        if (viraTitle) viraTitle.textContent = 'VIRA';
         if (gameState.vira) {
             const cardEl = renderCard(gameState.vira, false);
             cardEl.classList.add('vira');
