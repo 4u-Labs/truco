@@ -476,6 +476,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (manilhas >= 1 || highCards >= 2 || Math.random() < 0.6) {
                 showBanner('CPU ACEITOU JOGAR A MÃO DE 11!', 1800);
                 if (!gameState.isPlayerTurn) setTimeout(executeCpuTurn, 1400);
+                else renderPlayerHand();
             } else {
                 showBanner('CPU CORREU DA MÃO DE 11!', 1800);
                 showCpuTaunt('Tava horrível, fica com esse tento aí!');
@@ -489,6 +490,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (decision === 'accept') {
             showBanner('VOCÊ ACEITOU A MÃO DE 11!', 1500);
             if (!gameState.isPlayerTurn) setTimeout(executeCpuTurn, 1400);
+            else renderPlayerHand();
         } else {
             playAudio('knock');
             showBanner('VOCÊ CORREU DA MÃO DE 11 (+1 CPU)', 1500);
@@ -499,6 +501,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- PLAYER ACTION ---
     function playPlayerCard(idx) {
         if (!gameState.isPlayerTurn || gameState.waitingForTrucoResponse || gameState.gameOver) return;
+        if (!gameState.playerHand || !gameState.playerHand[idx]) return;
+
+        gameState.isPlayerTurn = false; // Prevent rapid double-clicks immediately
 
         const card = gameState.playerHand.splice(idx, 1)[0];
         if (gameState.playFacedown && gameState.currentRound > 0) {
@@ -514,8 +519,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         renderPlayerHand();
         renderPlayedCards();
-
-        gameState.isPlayerTurn = false;
 
         if (!gameState.opponentPlayed) {
             setTimeout(executeCpuTurn, 1100);
@@ -597,6 +600,7 @@ document.addEventListener('DOMContentLoaded', () => {
         renderPlayedCards();
 
         gameState.isPlayerTurn = true;
+        renderPlayerHand();
 
         if (gameState.playerPlayed) {
             setTimeout(resolveCurrentRound, 1000);
@@ -785,6 +789,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     // Chance of CPU raising back
                     if (manilhas >= 2 && nextLevel < maxLevel && Math.random() < 0.5) {
                         setTimeout(() => triggerTrucoCall('opponent'), 1200);
+                    } else {
+                        if (!gameState.isPlayerTurn) {
+                            setTimeout(executeCpuTurn, 1000);
+                        } else {
+                            renderPlayerHand();
+                        }
                     }
                 } else {
                     playAudio('knock');
@@ -820,6 +830,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (!gameState.isPlayerTurn) {
                 setTimeout(executeCpuTurn, 1000);
+            } else {
+                renderPlayerHand();
             }
         } else if (action === 'raise') {
             gameState.trucoLevel++;

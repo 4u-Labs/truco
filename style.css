@@ -65,7 +65,10 @@ body {
     flex-direction: column;
     width: 100%;
     height: 100vh;
+    height: 100dvh;
     max-height: 100vh;
+    max-height: 100dvh;
+    min-height: 0;
     position: relative;
     background: radial-gradient(ellipse at center, var(--felt-color-center) 0%, var(--felt-color-mid) 55%, var(--felt-color-edge) 100%);
     box-shadow: inset 0 0 120px rgba(0, 0, 0, 0.7);
@@ -73,9 +76,15 @@ body {
     border-style: ridge;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 768px), (max-height: 650px) {
     .game-viewport {
         border-width: 6px;
+    }
+}
+
+@media (max-height: 480px) {
+    .game-viewport {
+        border-width: 4px;
     }
 }
 
@@ -173,18 +182,19 @@ body {
 ==================================================== */
 .table-area {
     flex: 1;
+    min-height: 0;
     position: relative;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    padding: 12px;
+    padding: 8px 12px;
     overflow: hidden;
 }
 
 .round-indicators {
     position: absolute;
-    top: 14px;
-    left: 16px;
+    top: 10px;
+    left: 14px;
     display: flex;
     flex-direction: column;
     gap: 4px;
@@ -234,8 +244,8 @@ body {
 /* Vira Card Box */
 .vira-container {
     position: absolute;
-    top: 14px;
-    right: 16px;
+    top: 10px;
+    right: 14px;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -252,11 +262,13 @@ body {
 
 /* Center Battlefield */
 .battlefield {
-    flex: 1;
+    flex: 1 1 auto;
+    min-height: 0;
     display: flex;
     align-items: center;
     justify-content: center;
     position: relative;
+    padding: 4px 0;
 }
 
 .played-slots {
@@ -314,12 +326,90 @@ body {
     justify-content: center;
     transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.25s ease;
     border: 1px solid rgba(0,0,0,0.15);
+    flex-shrink: 0;
 }
 
-@media (max-width: 480px) {
+@media (max-width: 480px), (max-height: 620px) {
     .card {
-        width: 66px;
-        height: 94px;
+        width: 62px;
+        height: 88px;
+        border-radius: 8px;
+    }
+    .slot-placeholder {
+        width: 62px;
+        height: 88px;
+    }
+    .played-slot {
+        min-width: 62px;
+    }
+    .card-value, .card-value-bottom {
+        font-size: 0.95rem;
+    }
+    .card-suit {
+        font-size: 1.8rem;
+    }
+    .card-suit-corner, .card-suit-bottom {
+        font-size: 0.65rem;
+    }
+    .card-back::before {
+        font-size: 22px;
+    }
+}
+
+@media (max-height: 500px) {
+    .card {
+        width: 52px;
+        height: 74px;
+        border-radius: 6px;
+    }
+    .slot-placeholder {
+        width: 52px;
+        height: 74px;
+    }
+    .played-slot {
+        min-width: 52px;
+    }
+    .vs-badge {
+        font-size: 1.6rem;
+    }
+    .card-value, .card-value-bottom {
+        font-size: 0.8rem;
+        left: 5px;
+    }
+    .card-value-bottom {
+        right: 5px;
+    }
+    .card-suit {
+        font-size: 1.4rem;
+    }
+    .card-suit-corner, .card-suit-bottom {
+        font-size: 0.55rem;
+        top: 14px;
+        left: 5px;
+    }
+    .card-suit-bottom {
+        bottom: 14px;
+        right: 5px;
+    }
+    .card-back::before {
+        font-size: 18px;
+    }
+    .score-bar {
+        padding: 4px 10px;
+    }
+    .score-badge {
+        padding: 4px 8px;
+        gap: 6px;
+    }
+    .score-badge .score-val {
+        font-size: 1.3rem;
+    }
+    .current-bet-display span.value {
+        font-size: 1.5rem;
+    }
+    .round-dot {
+        width: 16px;
+        height: 16px;
     }
 }
 
@@ -434,12 +524,14 @@ body {
     justify-content: center;
     align-items: center;
     gap: 12px;
+    flex-shrink: 0;
+    z-index: 20;
 }
 
 .opponent-cards-row {
     display: flex;
     justify-content: center;
-    margin-bottom: 8px;
+    margin-bottom: 4px;
 }
 
 .opponent-cards-row .card {
@@ -454,7 +546,7 @@ body {
     display: flex;
     justify-content: center;
     gap: 14px;
-    padding-bottom: 6px;
+    padding-bottom: 4px;
 }
 
 /* ====================================================
@@ -531,6 +623,14 @@ body {
     flex-direction: column;
     gap: 8px;
     z-index: 25;
+}
+
+@media (max-height: 600px) {
+    .game-actions-bar {
+        bottom: 10px;
+        right: 10px;
+        gap: 6px;
+    }
 }
 
 .btn-truco-call {
