@@ -71,6 +71,7 @@ document.addEventListener('DOMContentLoaded', () => {
         canTruco: true,
         lastTrucoCaller: null,
         waitingForTrucoResponse: false,
+        isResolvingRound: false,
         playFacedown: false,
         isMaoDeFerro: false,
         gameOver: false
@@ -275,9 +276,21 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!container) return;
         container.innerHTML = '';
 
+        const canPlay = gameState.isPlayerTurn &&
+            !gameState.waitingForTrucoResponse &&
+            !gameState.isResolvingRound &&
+            !gameState.gameOver &&
+            gameState.playerPlayed === null;
+
+        container.classList.toggle('my-turn', canPlay);
+
         gameState.playerHand.forEach((card, index) => {
             const cardEl = renderCard(card, false);
-            cardEl.addEventListener('click', () => playPlayerCard(index));
+            if (!canPlay) {
+                cardEl.classList.add('card-disabled');
+            } else {
+                cardEl.addEventListener('click', () => playPlayerCard(index));
+            }
             container.appendChild(cardEl);
         });
 
@@ -285,7 +298,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const btnCoberta = $('#btnCartaCoberta');
         if (btnCoberta) {
             // Can only play facedown on 2nd and 3rd round of a hand
-            if (gameState.currentRound > 0 && gameState.isPlayerTurn && !gameState.waitingForTrucoResponse) {
+            if (gameState.currentRound > 0 && canPlay) {
                 btnCoberta.style.display = 'inline-flex';
                 btnCoberta.classList.toggle('active', gameState.playFacedown);
             } else {
@@ -378,7 +391,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (btnTruco) {
             const isMax = gameState.trucoLevel >= GAME_MODES[selectedMode].values.length - 1;
             const isMao11 = gameState.playerScore === 11 || gameState.opponentScore === 11;
-            if (isMax || !gameState.canTruco || isMao11) {
+            const trickOver = gameState.playerPlayed !== null && gameState.opponentPlayed !== null;
+            if (isMax || !gameState.canTruco || isMao11 || gameState.isResolvingRound || gameState.waitingForTrucoResponse || trickOver) {
                 btnTruco.style.display = 'none';
             } else {
                 btnTruco.style.display = 'inline-flex';
@@ -425,6 +439,7 @@ document.addEventListener('DOMContentLoaded', () => {
         gameState.canTruco = !(gameState.playerScore === 11 || gameState.opponentScore === 11);
         gameState.lastTrucoCaller = null;
         gameState.waitingForTrucoResponse = false;
+        gameState.isResolvingRound = false;
         gameState.playFacedown = false;
 
         // Alternate hand starter
@@ -500,7 +515,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- PLAYER ACTION ---
     function playPlayerCard(idx) {
-        if (!gameState.isPlayerTurn || gameState.waitingForTrucoResponse || gameState.gameOver) return;
+        if (gameState.gameOver || gameState.waitingForTrucoResponse || gameState.isResolvingRound) return;
+        if (!gameState.isPlayerTurn || gameState.playerPlayed !== null) return;
         if (!gameState.playerHand || !gameState.playerHand[idx]) return;
 
         gameState.isPlayerTurn = false; // Prevent rapid double-clicks immediately
@@ -519,23 +535,30 @@ document.addEventListener('DOMContentLoaded', () => {
 
         renderPlayerHand();
         renderPlayedCards();
+        updateScoreboard();
 
         if (!gameState.opponentPlayed) {
-            setTimeout(executeCpuTurn, 1100);
+            // Player played 1st -> schedule CPU turn
+            setTimeout(executeCpuTurn, 1000);
         } else {
-            setTimeout(resolveCurrentRound, 1000);
+            // Player played 2nd -> both cards on table!
+            gameState.isResolvingRound = true;
+            renderPlayerHand();
+            updateScoreboard();
+            setTimeout(resolveCurrentRound, 900);
         }
     }
 
     // --- CPU LOGIC & DIFFICULTY ---
     function executeCpuTurn() {
-        if (gameState.gameOver || gameState.waitingForTrucoResponse) return;
+        if (gameState.gameOver || gameState.waitingForTrucoResponse || gameState.isResolvingRound) return;
+        if (gameState.opponentPlayed !== null) return;
 
         const hand = gameState.opponentHand;
         if (hand.length === 0) return;
 
-        // Check if CPU wants to call Truco
-        if (gameState.canTruco && gameState.lastTrucoCaller !== 'opponent' && gameState.playerScore < 11 && gameState.opponentScore < 11) {
+        // Check if CPU wants to call Truco (only if trick is not already finished and CPU hasn't called yet)
+        if (gameState.canTruco && gameState.lastTrucoCaller !== 'opponent' && gameState.playerScore < 11 && gameState.opponentScore < 11 && !gameState.opponentPlayed) {
             const hasManilha = hand.some(c => isManilhaCard(c));
             const manilhaCount = hand.filter(c => isManilhaCard(c)).length;
             const strongCards = hand.filter(c => getCardStrength(c) >= 8).length;
@@ -599,11 +622,19 @@ document.addEventListener('DOMContentLoaded', () => {
         renderOpponentHand();
         renderPlayedCards();
 
-        gameState.isPlayerTurn = true;
-        renderPlayerHand();
-
-        if (gameState.playerPlayed) {
-            setTimeout(resolveCurrentRound, 1000);
+        if (!gameState.playerPlayed) {
+            // CPU played 1st -> now it is player's turn to respond
+            gameState.isPlayerTurn = true;
+            gameState.isResolvingRound = false;
+            renderPlayerHand();
+            updateScoreboard();
+        } else {
+            // CPU played 2nd -> both cards played, resolve round!
+            gameState.isPlayerTurn = false;
+            gameState.isResolvingRound = true;
+            renderPlayerHand();
+            updateScoreboard();
+            setTimeout(resolveCurrentRound, 900);
         }
     }
 
@@ -611,6 +642,12 @@ document.addEventListener('DOMContentLoaded', () => {
     function resolveCurrentRound() {
         const pCard = gameState.playerPlayed;
         const oCard = gameState.opponentPlayed;
+        if (!pCard || !oCard) {
+            gameState.isResolvingRound = false;
+            return;
+        }
+
+        gameState.isResolvingRound = true;
         const cmp = compareCards(pCard, oCard);
 
         let roundWinner;
@@ -632,26 +669,36 @@ document.addEventListener('DOMContentLoaded', () => {
         setTimeout(() => {
             const handWinner = evaluateHandWinner();
             if (handWinner) {
+                gameState.isResolvingRound = false;
                 endHand(handWinner);
             } else {
                 // Next round of this hand
                 gameState.currentRound++;
                 gameState.playerPlayed = null;
                 gameState.opponentPlayed = null;
+                gameState.isResolvingRound = false;
                 renderPlayedCards();
+
+                // Safety guard: if player or CPU has 0 cards left prematurely, end hand safely
+                if (gameState.playerHand.length === 0 || gameState.opponentHand.length === 0) {
+                    const fallbackWinner = evaluateHandWinner() || (gameState.playerHand.length > gameState.opponentHand.length ? 'player' : 'opponent');
+                    endHand(fallbackWinner);
+                    return;
+                }
 
                 if (roundWinner === 'player') {
                     gameState.isPlayerTurn = true;
                 } else if (roundWinner === 'opponent') {
                     gameState.isPlayerTurn = false;
-                    setTimeout(executeCpuTurn, 1100);
+                    setTimeout(executeCpuTurn, 1000);
                 } else {
                     // Draw: who started the previous round leads
                     if (!gameState.isPlayerTurn) {
-                        setTimeout(executeCpuTurn, 1100);
+                        setTimeout(executeCpuTurn, 1000);
                     }
                 }
                 renderPlayerHand();
+                updateScoreboard();
             }
         }, 1400);
     }
@@ -737,6 +784,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- TRUCO CALL & ESCALATION ---
     function triggerTrucoCall(caller) {
+        if (gameState.gameOver || gameState.waitingForTrucoResponse || gameState.isResolvingRound) return;
+        if (gameState.playerPlayed !== null && gameState.opponentPlayed !== null) return;
+
         const nextLevel = gameState.trucoLevel + 1;
         const maxLevel = GAME_MODES[selectedMode].values.length - 1;
         if (nextLevel > maxLevel) return;
@@ -790,9 +840,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (manilhas >= 2 && nextLevel < maxLevel && Math.random() < 0.5) {
                         setTimeout(() => triggerTrucoCall('opponent'), 1200);
                     } else {
-                        if (!gameState.isPlayerTurn) {
+                        if (!gameState.isPlayerTurn && gameState.opponentPlayed === null) {
                             setTimeout(executeCpuTurn, 1000);
-                        } else {
+                        } else if (gameState.isPlayerTurn) {
                             renderPlayerHand();
                         }
                     }
@@ -828,9 +878,9 @@ document.addEventListener('DOMContentLoaded', () => {
             updateScoreboard();
             gameState.waitingForTrucoResponse = false;
 
-            if (!gameState.isPlayerTurn) {
+            if (!gameState.isPlayerTurn && gameState.opponentPlayed === null) {
                 setTimeout(executeCpuTurn, 1000);
-            } else {
+            } else if (gameState.isPlayerTurn) {
                 renderPlayerHand();
             }
         } else if (action === 'raise') {
@@ -889,14 +939,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Truco Call
         $('#btnTrucoCall').addEventListener('click', () => {
-            if (gameState.canTruco && gameState.lastTrucoCaller !== 'player' && !gameState.waitingForTrucoResponse) {
+            if (gameState.gameOver || gameState.waitingForTrucoResponse || gameState.isResolvingRound) return;
+            if (gameState.playerPlayed !== null && gameState.opponentPlayed !== null) return;
+            if (gameState.canTruco && gameState.lastTrucoCaller !== 'player') {
                 triggerTrucoCall('player');
             }
         });
 
         // Carta Coberta toggle
         $('#btnCartaCoberta').addEventListener('click', () => {
-            if (gameState.currentRound > 0) {
+            if (gameState.currentRound > 0 && gameState.isPlayerTurn && !gameState.isResolvingRound && !gameState.waitingForTrucoResponse) {
                 gameState.playFacedown = !gameState.playFacedown;
                 $('#btnCartaCoberta').classList.toggle('active', gameState.playFacedown);
                 playAudio('deal');
@@ -933,7 +985,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- SERVICE WORKER REGISTRATION (Network-First & Cache Invalidation) ---
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-            navigator.serviceWorker.register('./service-worker.js', { updateViaCache: 'none' })
+            navigator.serviceWorker.register('./service-worker.js?v=2.0.0', { updateViaCache: 'none' })
                 .then(r => console.log('Truco SW Registered:', r.scope))
                 .catch(err => console.warn('Truco SW Error:', err));
         });

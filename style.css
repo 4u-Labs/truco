@@ -547,6 +547,24 @@ body {
     justify-content: center;
     gap: 14px;
     padding-bottom: 4px;
+    transition: all 0.3s ease;
+}
+
+.player-cards-row.my-turn .card:not(.card-disabled) {
+    cursor: pointer;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.5), 0 0 10px rgba(34, 197, 94, 0.3);
+}
+
+.player-cards-row.my-turn .card:not(.card-disabled):hover {
+    transform: translateY(-10px) scale(1.05);
+    box-shadow: 0 10px 24px rgba(0,0,0,0.6), 0 0 18px rgba(34, 197, 94, 0.6);
+}
+
+.card.card-disabled {
+    cursor: default !important;
+    pointer-events: none !important;
+    opacity: 0.78;
+    filter: brightness(0.88);
 }
 
 /* ====================================================

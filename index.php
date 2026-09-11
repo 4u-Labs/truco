@@ -28,6 +28,15 @@ $version = time();
 
     <!-- Anti-cache Stylesheet -->
     <link rel="stylesheet" href="style.css?v=<?= $version ?>"/>
+
+    <!-- Service Worker auto-update to ensure fresh cache -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.getRegistrations().then(function(regs) {
+                regs.forEach(function(r) { r.update(); });
+            });
+        }
+    </script>
 </head>
 <body>
 
