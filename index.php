@@ -78,6 +78,12 @@ $version = time();
             <button class="diff-btn" data-diff="mestre">🔴 Mestre do Baralho</button>
         </div>
 
+        <div style="display:flex; justify-content:center; gap:10px; margin-bottom:14px;">
+            <button class="diff-btn" id="startScreenStatsBtn" style="padding:8px 18px; border-color:var(--gold-accent); color:var(--gold-accent);">
+                <i class="fas fa-trophy"></i> Troféus & Estatísticas
+            </button>
+        </div>
+
         <button class="btn-start-game" id="btnStartGame">
             <i class="fas fa-play"></i> SENTAR NA MESA!
         </button>
@@ -118,6 +124,12 @@ $version = time();
                     <span class="score-val" id="playerScoreVal">0</span>
                     <span class="score-label" style="color:#22c55e;">VOCÊ 👤</span>
                 </div>
+                <button id="rulesCheatsheetBtn" class="score-badge" style="cursor:pointer; padding:8px 12px; color:var(--gold-accent);" title="Cola das Manilhas & Regras">
+                    <i class="fas fa-question-circle"></i>
+                </button>
+                <button id="statsBtn" class="score-badge" style="cursor:pointer; padding:8px 12px; color:var(--gold-accent);" title="Estatísticas & Conquistas">
+                    <i class="fas fa-trophy"></i>
+                </button>
                 <button id="soundToggleBtn" class="score-badge" style="cursor:pointer; padding:8px 12px; color:var(--text-color);" title="Ligar/Desligar Som">
                     <i class="fas fa-volume-up"></i>
                 </button>
@@ -180,6 +192,9 @@ $version = time();
                 <button class="btn-coberta" id="btnCartaCoberta" style="display:none;">
                     <i class="fas fa-eye-slash"></i> Carta Coberta
                 </button>
+                <button class="btn-desistir" id="btnDesistirMao" style="display:none;" title="Entregar a mão atual e passar para a próxima">
+                    <i class="fas fa-flag"></i> Correr da Mão
+                </button>
             </div>
 
             <!-- Player Hand -->
@@ -224,6 +239,94 @@ $version = time();
                     <i class="fas fa-cards"></i> JOGAR A MÃO!
                 </button>
             </div>
+        </div>
+    </div>
+
+    <!-- ==================== MODAL: COLA DAS MANILHAS & REGRAS ==================== -->
+    <div class="modal-overlay" id="rulesModal">
+        <div class="modal-dialog" style="max-width: 480px; text-align: left;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+                <h2 style="margin:0; font-size:1.4rem; color:var(--gold-accent); display:flex; align-items:center; gap:8px;">
+                    <i class="fas fa-cards"></i> COLA DO TRUCO
+                </h2>
+                <button id="btnCloseRules" style="background:transparent; border:none; color:#9ca3af; font-size:1.4rem; cursor:pointer;">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <!-- Dynamic Manilhas for Current Round -->
+            <div id="rulesActiveManilhasBox" style="background:rgba(255,215,0,0.1); border:1px solid rgba(255,215,0,0.3); border-radius:12px; padding:12px; margin-bottom:14px;">
+                <!-- Populated dynamically by app.js -->
+            </div>
+
+            <!-- General Card Hierarchy -->
+            <div style="background:rgba(255,255,255,0.05); border-radius:12px; padding:12px; margin-bottom:14px;">
+                <div style="font-weight:700; color:var(--gold-accent); font-size:0.8rem; margin-bottom:6px; text-transform:uppercase;">
+                    🃏 Ordem das Cartas Comuns (Maior &gt; Menor):
+                </div>
+                <div style="font-family:'Bebas Neue', sans-serif; font-size:1.3rem; letter-spacing:1px; color:#fff;">
+                    3 &gt; 2 &gt; A &gt; K &gt; J &gt; Q &gt; 7 &gt; 6 &gt; 5 &gt; 4
+                </div>
+            </div>
+
+            <!-- Escalation Table -->
+            <div style="background:rgba(255,255,255,0.05); border-radius:12px; padding:12px; margin-bottom:18px;">
+                <div style="font-weight:700; color:var(--gold-accent); font-size:0.8rem; margin-bottom:6px; text-transform:uppercase;">
+                    🔥 Escala de Apostas:
+                </div>
+                <div style="font-size:0.82rem; color:#d1d5db; line-height:1.4;" id="rulesEscalationText">
+                    <strong>Paulista:</strong> 1 &bull; 3 (Truco) &bull; 6 &bull; 9 &bull; 12<br>
+                    <strong>Mineiro:</strong> 1 &bull; 2 (Truco) &bull; 4 &bull; 8 &bull; 12
+                </div>
+            </div>
+
+            <button class="btn-accept-call" id="btnGotItRules" style="width:100%; justify-content:center; padding:12px;">
+                ENTENDI, BORA JOGAR!
+            </button>
+        </div>
+    </div>
+
+    <!-- ==================== MODAL: ESTATÍSTICAS & CONQUISTAS ==================== -->
+    <div class="modal-overlay" id="statsModal">
+        <div class="modal-dialog" style="max-width: 500px; text-align: left;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+                <h2 style="margin:0; font-size:1.4rem; color:var(--gold-accent); display:flex; align-items:center; gap:8px;">
+                    <i class="fas fa-trophy"></i> SUAS ESTATÍSTICAS
+                </h2>
+                <button id="btnCloseStats" style="background:transparent; border:none; color:#9ca3af; font-size:1.4rem; cursor:pointer;">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-val" id="statMatchesPlayed">0</div>
+                    <div class="stat-lbl">Partidas</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-val" id="statWinRate">0%</div>
+                    <div class="stat-lbl">Aproveitamento</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-val" id="statTentosScored">0</div>
+                    <div class="stat-lbl">Tentos Marcados</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-val" id="statBluffsCaught">0</div>
+                    <div class="stat-lbl">Blefes Pegos</div>
+                </div>
+            </div>
+
+            <div style="font-size:0.8rem; font-family:'Orbitron', monospace; color:var(--gold-accent); text-transform:uppercase; margin-bottom:8px;">
+                Conquistas Desbloqueáveis:
+            </div>
+            <div class="achievements-list" id="achievementsContainer">
+                <!-- Injected dynamically by app.js -->
+            </div>
+
+            <button class="btn-accept-call" id="btnCloseStatsBtn" style="width:100%; justify-content:center; padding:12px;">
+                FECHAR
+            </button>
         </div>
     </div>
 

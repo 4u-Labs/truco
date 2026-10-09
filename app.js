@@ -74,6 +74,8 @@ document.addEventListener('DOMContentLoaded', () => {
         isResolvingRound: false,
         playFacedown: false,
         isMaoDeFerro: false,
+        cpuBluffed: false,
+        playerBluffed: false,
         gameOver: false
     };
 
@@ -155,6 +157,232 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (e) {
             console.warn('Audio error:', e);
         }
+    }
+
+    // --- WEB SPEECH API & HAPTIC VIBRATION ---
+    function triggerHaptic(pattern = [50, 40, 80]) {
+        if (!soundEnabled || !('vibrate' in navigator)) return;
+        try {
+            navigator.vibrate(pattern);
+        } catch (e) {}
+    }
+
+    function speakTrucoPhrase(text, pitch = 1.0, rate = 1.1) {
+        if (!soundEnabled || !('speechSynthesis' in window)) return;
+        try {
+            window.speechSynthesis.cancel();
+            const cleanText = text.replace(/[!🔥⚔️🏃👤🤖]/g, '').trim();
+            if (!cleanText) return;
+            const utter = new SpeechSynthesisUtterance(cleanText);
+            utter.lang = 'pt-BR';
+            utter.rate = rate;
+            utter.pitch = pitch;
+
+            const voices = window.speechSynthesis.getVoices();
+            const ptVoice = voices.find(v => v.lang === 'pt-BR' || v.lang === 'pt_BR' || v.lang.startsWith('pt'));
+            if (ptVoice) utter.voice = ptVoice;
+
+            window.speechSynthesis.speak(utter);
+        } catch (e) {
+            console.warn('Speech error:', e);
+        }
+    }
+
+    // Preload speech synthesis voices
+    if ('speechSynthesis' in window) {
+        window.speechSynthesis.onvoiceschanged = () => {
+            window.speechSynthesis.getVoices();
+        };
+    }
+
+    // --- CONFETTI CANNON (CANVAS) ---
+    function launchVictoryConfetti() {
+        const canvas = document.createElement('canvas');
+        canvas.style.position = 'fixed';
+        canvas.style.top = '0';
+        canvas.style.left = '0';
+        canvas.style.width = '100vw';
+        canvas.style.height = '100vh';
+        canvas.style.pointerEvents = 'none';
+        canvas.style.zIndex = '99999';
+        document.body.appendChild(canvas);
+
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        const pieces = [];
+        const colors = ['#ffd700', '#ef4444', '#38ef7d', '#3b82f6', '#f59e0b', '#ec4899'];
+        for (let i = 0; i < 90; i++) {
+            pieces.push({
+                x: canvas.width / 2,
+                y: canvas.height / 2,
+                w: Math.random() * 8 + 6,
+                h: Math.random() * 6 + 4,
+                color: colors[Math.floor(Math.random() * colors.length)],
+                vx: (Math.random() - 0.5) * 16,
+                vy: (Math.random() - 0.7) * 18,
+                rot: Math.random() * 360,
+                vrot: (Math.random() - 0.5) * 12,
+                life: 1
+            });
+        }
+
+        let animId;
+        const render = () => {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            let alive = false;
+            pieces.forEach(p => {
+                p.x += p.vx;
+                p.y += p.vy;
+                p.vy += 0.4;
+                p.rot += p.vrot;
+                p.life -= 0.012;
+                if (p.life > 0) {
+                    alive = true;
+                    ctx.save();
+                    ctx.translate(p.x, p.y);
+                    ctx.rotate((p.rot * Math.PI) / 180);
+                    ctx.fillStyle = p.color;
+                    ctx.globalAlpha = Math.max(0, p.life);
+                    ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+                    ctx.restore();
+                }
+            });
+
+            if (alive) {
+                animId = requestAnimationFrame(render);
+            } else {
+                canvas.remove();
+            }
+        };
+        render();
+    }
+
+    // --- STATS & ACHIEVEMENTS SYSTEM ---
+    const STATS_STORAGE_KEY = 'truco_pro_max_stats_v1';
+    const ACHIEVEMENTS_DEF = [
+        { id: 'rei_do_zap', icon: '👑', title: 'Rei do Zap', desc: 'Bateu a última rodada da mão cravando o Zap na mesa.' },
+        { id: 'blefador_nato', icon: '🎭', title: 'Malandro Nato', desc: 'Gritou Truco sem nenhuma manilha e fez a CPU correr.' },
+        { id: 'doze_na_mesa', icon: '⚡', title: 'Doze na Mesa', desc: 'Venceu uma mão disputadíssima valendo 12 tentos!' },
+        { id: 'mao_de_ferro', icon: '🛡️', title: 'Mão de Ferro', desc: 'Venceu a rodada jogada às cegas no 11x11.' },
+        { id: 'buchuda', icon: '🦃', title: 'Buchuda de Ré', desc: 'Ganhou a partida completa da CPU por 12 a 0.' }
+    ];
+
+    let gameStats = {
+        matchesPlayed: 0,
+        matchesWon: 0,
+        matchesLost: 0,
+        tentosScored: 0,
+        trucosAccepted: 0,
+        bluffsCaught: 0,
+        achievements: {
+            rei_do_zap: false,
+            blefador_nato: false,
+            doze_na_mesa: false,
+            mao_de_ferro: false,
+            buchuda: false
+        }
+    };
+
+    function loadStats() {
+        try {
+            const raw = localStorage.getItem(STATS_STORAGE_KEY);
+            if (raw) {
+                const parsed = JSON.parse(raw);
+                gameStats = { ...gameStats, ...parsed };
+                if (parsed.achievements) {
+                    gameStats.achievements = { ...gameStats.achievements, ...parsed.achievements };
+                }
+            }
+        } catch (e) {}
+    }
+
+    function saveStats() {
+        try {
+            localStorage.setItem(STATS_STORAGE_KEY, JSON.stringify(gameStats));
+        } catch (e) {}
+    }
+
+    function unlockAchievement(id, title) {
+        if (!gameStats.achievements[id]) {
+            gameStats.achievements[id] = true;
+            saveStats();
+            showBanner(`🏆 CONQUISTA: ${title}!`, 3200);
+            playAudio('win');
+            triggerHaptic([100, 50, 100, 50, 200]);
+        }
+    }
+
+    function openRulesModal() {
+        const box = $('#rulesActiveManilhasBox');
+        if (box) {
+            if (selectedMode === 'mineiro') {
+                box.innerHTML = `
+                    <div style="font-weight:700; color:var(--gold-accent); font-size:0.8rem; margin-bottom:6px; text-transform:uppercase;">
+                        👑 Manilhas Fixas do Mineiro (Maior &gt; Menor):
+                    </div>
+                    <div style="display:flex; justify-content:space-around; text-align:center; margin-top:8px;">
+                        <div><strong style="color:#38ef7d; font-size:1.1rem;">4♣</strong><div style="font-size:0.7rem; color:#ffd700;">ZAP</div></div>
+                        <div style="color:#9ca3af; align-self:center;">&gt;</div>
+                        <div><strong style="color:#ef4444; font-size:1.1rem;">7♥</strong><div style="font-size:0.7rem; color:#ffd700;">COPETA</div></div>
+                        <div style="color:#9ca3af; align-self:center;">&gt;</div>
+                        <div><strong style="color:#60a5fa; font-size:1.1rem;">A♠</strong><div style="font-size:0.7rem; color:#ffd700;">ESPADILHA</div></div>
+                        <div style="color:#9ca3af; align-self:center;">&gt;</div>
+                        <div><strong style="color:#fbbf24; font-size:1.1rem;">7♦</strong><div style="font-size:0.7rem; color:#ffd700;">PICAFUMO</div></div>
+                    </div>
+                `;
+            } else {
+                const viraText = gameState.vira ? `${gameState.vira.value}${gameState.vira.suit}` : 'Ainda não virado';
+                const manilhaVal = gameState.manilhaValue || '?';
+                box.innerHTML = `
+                    <div style="font-weight:700; color:var(--gold-accent); font-size:0.8rem; margin-bottom:6px; text-transform:uppercase;">
+                        👑 Manilhas da Rodada (Vira: <span style="color:#fff;">${viraText}</span> &rarr; Manilha: <span style="color:#ffd700; font-size:1rem;">${manilhaVal}</span>):
+                    </div>
+                    <div style="display:flex; justify-content:space-around; text-align:center; margin-top:8px;">
+                        <div><strong style="color:#38ef7d; font-size:1.1rem;">${manilhaVal}♣</strong><div style="font-size:0.7rem; color:#ffd700;">ZAP</div></div>
+                        <div style="color:#9ca3af; align-self:center;">&gt;</div>
+                        <div><strong style="color:#ef4444; font-size:1.1rem;">${manilhaVal}♥</strong><div style="font-size:0.7rem; color:#ffd700;">COPAS</div></div>
+                        <div style="color:#9ca3af; align-self:center;">&gt;</div>
+                        <div><strong style="color:#60a5fa; font-size:1.1rem;">${manilhaVal}♠</strong><div style="font-size:0.7rem; color:#ffd700;">ESPADILHA</div></div>
+                        <div style="color:#9ca3af; align-self:center;">&gt;</div>
+                        <div><strong style="color:#fbbf24; font-size:1.1rem;">${manilhaVal}♦</strong><div style="font-size:0.7rem; color:#ffd700;">PICAFUMO</div></div>
+                    </div>
+                `;
+            }
+        }
+        $('#rulesModal').classList.add('active');
+        playAudio('deal');
+    }
+
+    function openStatsModal() {
+        $('#statMatchesPlayed').textContent = gameStats.matchesPlayed;
+        const total = gameStats.matchesPlayed;
+        const rate = total > 0 ? Math.round((gameStats.matchesWon / total) * 100) : 0;
+        $('#statWinRate').textContent = `${rate}%`;
+        $('#statTentosScored').textContent = gameStats.tentosScored;
+        $('#statBluffsCaught').textContent = gameStats.bluffsCaught;
+
+        const container = $('#achievementsContainer');
+        if (container) {
+            container.innerHTML = '';
+            ACHIEVEMENTS_DEF.forEach(ach => {
+                const unlocked = !!gameStats.achievements[ach.id];
+                const div = document.createElement('div');
+                div.className = `achievement-item ${unlocked ? 'unlocked' : ''}`;
+                div.innerHTML = `
+                    <div class="achievement-icon">${unlocked ? ach.icon : '🔒'}</div>
+                    <div class="achievement-info">
+                        <h4>${ach.title} ${unlocked ? '✓' : ''}</h4>
+                        <p>${ach.desc}</p>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        $('#statsModal').classList.add('active');
+        playAudio('deal');
     }
 
     // --- SCREEN SHAKE & EFFECTS ---
@@ -241,6 +469,15 @@ document.addEventListener('DOMContentLoaded', () => {
         return 0;
     }
 
+    function getManilhaNickname(card) {
+        if (!isManilhaCard(card)) return null;
+        if (card.suit === '♣') return 'ZAP';
+        if (card.suit === '♥') return selectedMode === 'mineiro' ? 'COPETA' : 'COPAS';
+        if (card.suit === '♠') return 'ESPADILHA';
+        if (card.suit === '♦') return 'PICAFUMO';
+        return null;
+    }
+
     // --- RENDERING FUNCTIONS ---
     function renderCard(card, isOpponent = false) {
         const div = document.createElement('div');
@@ -257,11 +494,17 @@ document.addEventListener('DOMContentLoaded', () => {
         const isRed = card.suit === '♥' || card.suit === '♦';
         div.classList.add(isRed ? 'card-red' : 'card-black');
 
-        if (isManilhaCard(card)) {
+        const isManilha = isManilhaCard(card);
+        const nickname = isManilha ? getManilhaNickname(card) : null;
+
+        if (isManilha) {
             div.classList.add('manilha');
         }
 
+        const badgeHtml = nickname ? `<span class="manilha-badge">${nickname}</span>` : '';
+
         div.innerHTML = `
+            ${badgeHtml}
             <span class="card-value">${card.value}</span>
             <span class="card-suit-corner">${card.suit}</span>
             <span class="card-suit">${card.suit}</span>
@@ -304,6 +547,16 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 btnCoberta.style.display = 'none';
                 gameState.playFacedown = false;
+            }
+        }
+
+        // Update Correr da Mão button visibility
+        const btnDesistir = $('#btnDesistirMao');
+        if (btnDesistir) {
+            if (canPlay && !gameState.gameOver && gameState.playerScore < 11 && gameState.opponentScore < 11) {
+                btnDesistir.style.display = 'inline-flex';
+            } else {
+                btnDesistir.style.display = 'none';
             }
         }
     }
@@ -361,6 +614,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (gameState.playerPlayed) {
             const pCard = renderCard(gameState.playerPlayed);
             pCard.classList.add('played');
+            if (!gameState.playerPlayed.rotAngle) {
+                gameState.playerPlayed.rotAngle = ((Math.random() * 8) - 4).toFixed(1);
+            }
+            pCard.style.transform = `rotate(${gameState.playerPlayed.rotAngle}deg)`;
             playerSlot.appendChild(pCard);
         } else {
             playerSlot.innerHTML = '<div class="slot-placeholder"><span style="font-size:0.75rem; color:var(--subtitle-color);">VOCÊ</span></div>';
@@ -369,6 +626,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (gameState.opponentPlayed) {
             const oCard = renderCard(gameState.opponentPlayed);
             oCard.classList.add('played');
+            if (!gameState.opponentPlayed.rotAngle) {
+                gameState.opponentPlayed.rotAngle = ((Math.random() * 8) - 4).toFixed(1);
+            }
+            oCard.style.transform = `rotate(${gameState.opponentPlayed.rotAngle}deg)`;
             cpuSlot.appendChild(oCard);
         } else {
             cpuSlot.innerHTML = '<div class="slot-placeholder"><span style="font-size:0.75rem; color:var(--subtitle-color);">CPU</span></div>';
@@ -670,6 +931,15 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         gameState.roundWins[gameState.currentRound] = roundWinner;
+
+        // Check if player won 3rd round with Zap
+        if (roundWinner === 'player' && gameState.currentRound === 2) {
+            const pCard = gameState.playerPlayed;
+            if (pCard && pCard.suit === '♣' && (selectedMode === 'mineiro' ? pCard.value === '4' : pCard.value === gameState.manilhaValue)) {
+                unlockAchievement('rei_do_zap', 'Rei do Zap');
+            }
+        }
+
         updateScoreboard();
 
         setTimeout(() => {
@@ -751,12 +1021,41 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (winner === 'player') {
             gameState.playerScore += points;
+            gameStats.tentosScored += points;
+            saveStats();
             showBanner(`VOCÊ GANHOU +${points} TENTOS! 🎉`, 2000);
             playAudio('win');
+
+            if (points >= 12) {
+                unlockAchievement('doze_na_mesa', 'Doze na Mesa');
+            }
+            if (gameState.isMaoDeFerro) {
+                unlockAchievement('mao_de_ferro', 'Mão de Ferro no Escuro');
+            }
         } else {
             gameState.opponentScore += points;
             showBanner(`CPU GANHOU +${points} TENTOS! 😢`, 2000);
             showCpuTaunt('Entra na fila do pão, freguês!');
+        }
+
+        // Revelação de Blefes
+        if (gameState.lastTrucoCaller === 'opponent' && gameState.cpuBluffed) {
+            if (winner === 'opponent') {
+                setTimeout(() => {
+                    showBanner('🤡 A CPU TE BLEFOU! Gritou truco sem ter jogo!', 2800);
+                }, 1200);
+            } else if (winner === 'player') {
+                gameStats.bluffsCaught++;
+                saveStats();
+                setTimeout(() => {
+                    showBanner('🎯 VOCÊ PEGOU O BLEFE DA CPU!', 2800);
+                }, 1200);
+            }
+        } else if (gameState.lastTrucoCaller === 'player' && gameState.playerBluffed && winner === 'player') {
+            unlockAchievement('blefador_nato', 'Malandro Nato');
+            setTimeout(() => {
+                showBanner('🎭 BLEFE DE MESTRE! Fez a CPU correr sem manilha!', 2800);
+            }, 1200);
         }
 
         updateScoreboard();
@@ -773,17 +1072,28 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function endMatch(winner) {
         gameState.gameOver = true;
+        gameStats.matchesPlayed++;
         const modal = $('#gameoverModal');
         if (winner === 'player') {
+            gameStats.matchesWon++;
             $('#gameoverEmoji').textContent = '🏆';
             $('#gameoverTitle').textContent = 'GRANDE CAMPEÃO!';
             $('#gameoverSubtitle').textContent = 'Você limpou a banca e deu um show no Truco!';
             playAudio('win');
+            launchVictoryConfetti();
+            triggerHaptic([100, 50, 100, 50, 200]);
+            speakTrucoPhrase('Parabéns, você é o grande campeão!', 1.1, 1.1);
+
+            if (gameState.opponentScore === 0) {
+                unlockAchievement('buchuda', 'Buchuda de Ré (12 a 0)');
+            }
         } else {
+            gameStats.matchesLost++;
             $('#gameoverEmoji').textContent = '😢';
             $('#gameoverTitle').textContent = 'DERROTA NA MESA!';
             $('#gameoverSubtitle').textContent = 'A CPU foi mais esperta dessa vez... Vai amarelar?';
         }
+        saveStats();
         $('#finalScoreText').textContent = `${gameState.playerScore} x ${gameState.opponentScore}`;
         modal.classList.add('active');
     }
@@ -807,6 +1117,23 @@ document.addEventListener('DOMContentLoaded', () => {
         const modal = $('#trucoModal');
         $('#trucoModalCaller').textContent = caller === 'player' ? 'VOCÊ GRITOU:' : 'CPU GRITOU:';
         $('#trucoModalValue').textContent = callName;
+
+        // Bluff tracking & Voice call
+        if (caller === 'opponent') {
+            const hand = gameState.opponentHand;
+            const hasManilha = hand.some(c => isManilhaCard(c));
+            const hasHigh = hand.some(c => getCardStrength(c) >= 7);
+            gameState.cpuBluffed = (!hasManilha && !hasHigh);
+            speakTrucoPhrase(callName, 0.9, 1.05);
+            triggerHaptic([120, 60, 200]);
+        } else if (caller === 'player') {
+            const hand = gameState.playerHand;
+            const hasManilha = hand.some(c => isManilhaCard(c));
+            const hasHigh = hand.some(c => getCardStrength(c) >= 7);
+            gameState.playerBluffed = (!hasManilha && !hasHigh);
+            speakTrucoPhrase(callName, 1.15, 1.15);
+            triggerHaptic([100, 50, 150]);
+        }
 
         // Next escalation button (e.g. SEIS!, NOVE!, DOZE!)
         const btnRaise = $('#btnTrucoRaise');
@@ -839,6 +1166,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     gameState.canTruco = gameState.trucoLevel < maxLevel;
                     showBanner(`CPU ACEITOU O ${callName}! ⚔️`, 1800);
                     showCpuTaunt('Caiu no meu laço, agora aguenta!');
+                    speakTrucoPhrase('Aceito! Cai pra dentro!', 0.9, 1.1);
                     updateScoreboard();
                     gameState.waitingForTrucoResponse = false;
 
@@ -856,6 +1184,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     playAudio('knock');
                     showBanner(`CPU CORREU DO ${callName}! 🏃`, 1800);
                     showCpuTaunt('Essa mão tava com cheiro de mofo...');
+                    speakTrucoPhrase('Não quero, corre!', 0.9, 1.15);
                     gameState.waitingForTrucoResponse = false;
                     endHand('player');
                 }
@@ -874,13 +1203,17 @@ document.addEventListener('DOMContentLoaded', () => {
         if (action === 'run') {
             playAudio('knock');
             showBanner('VOCÊ CORREU! 🏃', 1500);
+            speakTrucoPhrase('Correu!', 1.0, 1.1);
             gameState.waitingForTrucoResponse = false;
             endHand('opponent');
         } else if (action === 'accept') {
             gameState.trucoLevel++;
             const maxLevel = GAME_MODES[selectedMode].values.length - 1;
             gameState.canTruco = gameState.trucoLevel < maxLevel;
+            gameStats.trucosAccepted++;
+            saveStats();
             showBanner(`VOCÊ ACEITOU! VALE ${GAME_MODES[selectedMode].values[gameState.trucoLevel]} TENTOS!`, 1500);
+            speakTrucoPhrase('Aceito!', 1.1, 1.15);
             updateScoreboard();
             gameState.waitingForTrucoResponse = false;
 
@@ -970,6 +1303,38 @@ document.addEventListener('DOMContentLoaded', () => {
         $('#btnMao11Accept').addEventListener('click', () => respondMaoDeOnze('accept'));
         $('#btnMao11Run').addEventListener('click', () => respondMaoDeOnze('run'));
 
+        // Rules Modal handlers
+        const btnRules = $('#rulesCheatsheetBtn');
+        if (btnRules) btnRules.addEventListener('click', openRulesModal);
+        const btnCloseRules = $('#btnCloseRules');
+        if (btnCloseRules) btnCloseRules.addEventListener('click', () => $('#rulesModal').classList.remove('active'));
+        const btnGotItRules = $('#btnGotItRules');
+        if (btnGotItRules) btnGotItRules.addEventListener('click', () => $('#rulesModal').classList.remove('active'));
+
+        // Stats Modal handlers
+        const btnStats = $('#statsBtn');
+        if (btnStats) btnStats.addEventListener('click', openStatsModal);
+        const btnStartStats = $('#startScreenStatsBtn');
+        if (btnStartStats) btnStartStats.addEventListener('click', openStatsModal);
+        const btnCloseStats = $('#btnCloseStats');
+        if (btnCloseStats) btnCloseStats.addEventListener('click', () => $('#statsModal').classList.remove('active'));
+        const btnCloseStatsBtn = $('#btnCloseStatsBtn');
+        if (btnCloseStatsBtn) btnCloseStatsBtn.addEventListener('click', () => $('#statsModal').classList.remove('active'));
+
+        // Correr da Mão (Desistir da mão)
+        const btnDesistir = $('#btnDesistirMao');
+        if (btnDesistir) {
+            btnDesistir.addEventListener('click', () => {
+                if (gameState.gameOver || gameState.waitingForTrucoResponse || gameState.isResolvingRound) return;
+                if (confirm('Deseja desistir desta mão e entregar os tentos atuais para a CPU?')) {
+                    playAudio('knock');
+                    showBanner('VOCÊ DESISTIU DA MÃO! 🏳️', 1800);
+                    speakTrucoPhrase('Desistiu da mão!', 1.0, 1.1);
+                    endHand('opponent');
+                }
+            });
+        }
+
         // Sound Toggle
         $('#soundToggleBtn').addEventListener('click', () => {
             soundEnabled = !soundEnabled;
@@ -991,12 +1356,13 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- SERVICE WORKER REGISTRATION (Network-First & Cache Invalidation) ---
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-            navigator.serviceWorker.register('./service-worker.js?v=2.0.0', { updateViaCache: 'none' })
+            navigator.serviceWorker.register('./service-worker.js?v=2.1.0', { updateViaCache: 'none' })
                 .then(r => console.log('Truco SW Registered:', r.scope))
                 .catch(err => console.warn('Truco SW Error:', err));
         });
     }
 
     // --- INIT ---
+    loadStats();
     bindEvents();
 });

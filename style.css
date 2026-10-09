@@ -511,6 +511,28 @@ body {
     }
 }
 
+/* Badge com apelido da Manilha (ZAP, COPAS, ESPADILHA, PICAFUMO) */
+.manilha-badge {
+    position: absolute;
+    top: 3px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: linear-gradient(135deg, #ffd700, #ff8c00);
+    color: #111827;
+    font-size: 0.52rem;
+    font-weight: 900;
+    font-family: 'Orbitron', monospace;
+    padding: 1px 5px;
+    border-radius: 4px;
+    letter-spacing: 0.5px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.4);
+    white-space: nowrap;
+    z-index: 5;
+    pointer-events: none;
+    text-transform: uppercase;
+    border: 1px solid rgba(255, 255, 255, 0.4);
+}
+
 .vira {
     transform: rotate(-6deg);
     box-shadow: 0 0 16px rgba(255, 215, 0, 0.5);
@@ -711,6 +733,97 @@ body {
 
 .btn-run-action:hover {
     transform: scale(1.04);
+}
+
+.btn-desistir {
+    background: rgba(185, 28, 28, 0.25);
+    color: #fca5a5;
+    border: 1px solid rgba(239, 68, 68, 0.4);
+    border-radius: 10px;
+    padding: 8px 14px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.btn-desistir:hover {
+    background: rgba(220, 38, 38, 0.8);
+    color: #fff;
+    border-color: #ef4444;
+}
+
+/* Stats & Rules Modals */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    margin-bottom: 20px;
+}
+.stat-card {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 215, 0, 0.2);
+    border-radius: 12px;
+    padding: 12px;
+    text-align: center;
+}
+.stat-val {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.8rem;
+    color: var(--gold-accent);
+    line-height: 1;
+}
+.stat-lbl {
+    font-size: 0.72rem;
+    color: var(--subtitle-color);
+    text-transform: uppercase;
+    margin-top: 4px;
+}
+.achievements-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-height: 200px;
+    overflow-y: auto;
+    margin-bottom: 20px;
+}
+.achievement-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+    padding: 8px 12px;
+    text-align: left;
+}
+.achievement-item.unlocked {
+    border-color: var(--gold-accent);
+    background: rgba(255, 215, 0, 0.08);
+}
+.achievement-icon {
+    font-size: 1.4rem;
+    opacity: 0.35;
+}
+.achievement-item.unlocked .achievement-icon {
+    opacity: 1;
+    filter: drop-shadow(0 0 6px var(--gold-accent));
+}
+.achievement-info h4 {
+    margin: 0;
+    font-size: 0.85rem;
+    color: #fff;
+}
+.achievement-item.unlocked .achievement-info h4 {
+    color: var(--gold-accent);
+}
+.achievement-info p {
+    margin: 2px 0 0;
+    font-size: 0.72rem;
+    color: var(--subtitle-color);
 }
 
 /* ====================================================

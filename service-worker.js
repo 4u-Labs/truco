@@ -1,4 +1,4 @@
-const CACHE_NAME = 'truco-v2.0.0';
+const CACHE_NAME = 'truco-v2.1.0';
 const ASSETS_TO_CACHE = [
   './',
   './index.php',
@@ -8,7 +8,8 @@ const ASSETS_TO_CACHE = [
   './favicon.png',
   './icon-192.png',
   './icon-512.png',
-  './apple-touch-icon.png'
+  './apple-touch-icon.png',
+  './banner-16-9.jpg'
 ];
 
 self.addEventListener('install', (event) => {
