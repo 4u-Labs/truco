@@ -17,7 +17,8 @@ $version = time();
     <meta name="mobile-web-app-capable" content="yes"/>
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
     <link rel="manifest" href="manifest.json"/>
-    <link rel="icon" type="image/png" sizes="64x64" href="favicon.png"/>
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png?v=20261120-2">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico?v=20261120-2">
     <link rel="apple-touch-icon" href="apple-touch-icon.png"/>
 
     <!-- Fonts & Icons -->
@@ -37,6 +38,10 @@ $version = time();
             });
         }
     </script>
+
+    <!-- 4u-Labs SEO & Standard Meta -->
+    <link rel="canonical" href="https://4u.ia.br/app/truco/">
+    <meta property="og:type" content="website"><meta property="og:site_name" content="4u-Labs"><meta property="og:url" content="https://4u.ia.br/app/truco/"><meta property="og:title" content="Truco Pro Max | 4U.IA.BR"><meta property="og:description" content="Jogo de Truco Paulista e Mineiro tradicional com manilhas fixas, inteligência artificial com blefes, carta coberta, mão de 11 e efeitos sonoros autênticos."><meta property="og:image" content="https://4u.ia.br/app/truco/icon-512.png">
 </head>
 <body>
 
@@ -352,5 +357,7 @@ $version = time();
 
     <!-- Anti-cache Script -->
     <script src="app.js?v=<?= $version ?>"></script>
+
+    <script defer src="/assets/4ulabs-ecosystem.js?v=20261122" data-fouru-i18n="1"></script>
 </body>
 </html>
